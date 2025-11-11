@@ -1,0 +1,446 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum UserRole {
+  USER
+  ADMIN
+  OWNER
+}
+
+enum ReservationStatus {
+  PENDING
+  CONFIRMED
+  CANCELLED
+  COMPLETED
+  REJECTED
+}
+
+enum PaymentStatus {
+  PENDING
+  PAID
+  FAILED
+  REFUNDED
+  PARTIAL
+}
+
+enum VillaStatus {
+  ACTIVE
+  INACTIVE
+  MAINTENANCE
+}
+
+model User {
+  id            String   @id @default(cuid())
+  email         String   @unique
+  password      String
+  firstName     String
+  lastName      String
+  phone         String?
+  role          UserRole @default(USER)
+  isEmailVerified Boolean @default(false)
+  emailVerificationToken String?
+  resetPasswordToken String?
+  resetPasswordExpires DateTime?
+  avatar        String?
+  language      String   @default("tr")
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+  
+  // Relations
+  reservations  Reservation[]
+  reviews       Review[]
+  favorites     Favorite[]
+  
+  @@index([email])
+  @@map("users")
+}
+
+model Villa {
+  id                String       @id @default(cuid())
+  title             String
+  slug              String       @unique
+  description       String       @db.Text
+  shortDescription  String?
+  
+  // Location
+  country           String
+  city              String
+  region            String?
+  address           String       @db.Text
+  latitude          Float?
+  longitude         Float?
+  
+  // Property details
+  propertyType      String       // villa, apartment, house
+  maxGuests         Int
+  bedrooms          Int
+  bathrooms         Int
+  area              Int?         // m2
+  
+  // Pricing
+  pricePerNight     Decimal      @db.Decimal(10, 2)
+  cleaningFee       Decimal?     @db.Decimal(10, 2)
+  securityDeposit   Decimal?     @db.Decimal(10, 2)
+  
+  // Status
+  status            VillaStatus  @default(ACTIVE)
+  isFeatured        Boolean      @default(false)
+  isInstantBook     Boolean      @default(false)
+  
+  // Minimum stay
+  minStay           Int          @default(1)
+  maxStay           Int?
+  
+  // Check-in/out times
+  checkInTime       String       @default("15:00")
+  checkOutTime      String       @default("11:00")
+  
+  // Rules
+  allowPets         Boolean      @default(false)
+  allowSmoking      Boolean      @default(false)
+  allowEvents       Boolean      @default(false)
+  allowChildren     Boolean      @default(true)
+  
+  // SEO
+  metaTitle         String?
+  metaDescription   String?      @db.Text
+  
+  createdAt         DateTime     @default(now())
+  updatedAt         DateTime     @updatedAt
+  
+  // Relations
+  images            VillaImage[]
+  videos            VillaVideo[]
+  amenities         VillaAmenity[]
+  features          VillaFeature[]
+  reservations      Reservation[]
+  reviews           Review[]
+  availability      VillaAvailability[]
+  seasonalPricing   SeasonalPricing[]
+  favorites         Favorite[]
+  
+  @@index([slug])
+  @@index([city])
+  @@index([status])
+  @@index([isFeatured])
+  @@map("villas")
+}
+
+model VillaImage {
+  id          String   @id @default(cuid())
+  villaId     String
+  villa       Villa    @relation(fields: [villaId], references: [id], onDelete: Cascade)
+  url         String
+  alt         String?
+  caption     String?
+  order       Int      @default(0)
+  isMain      Boolean  @default(false)
+  createdAt   DateTime @default(now())
+  
+  @@index([villaId])
+  @@map("villa_images")
+}
+
+model VillaVideo {
+  id          String   @id @default(cuid())
+  villaId     String
+  villa       Villa    @relation(fields: [villaId], references: [id], onDelete: Cascade)
+  url         String
+  thumbnail   String?
+  title       String?
+  order       Int      @default(0)
+  isMain      Boolean  @default(false)
+  createdAt   DateTime @default(now())
+  
+  @@index([villaId])
+  @@map("villa_videos")
+}
+
+model Amenity {
+  id          String   @id @default(cuid())
+  name        String   @unique
+  icon        String?
+  category    String   // general, kitchen, bathroom, outdoor, entertainment
+  description String?
+  createdAt   DateTime @default(now())
+  
+  villas      VillaAmenity[]
+  
+  @@map("amenities")
+}
+
+model VillaAmenity {
+  id        String   @id @default(cuid())
+  villaId   String
+  villa     Villa    @relation(fields: [villaId], references: [id], onDelete: Cascade)
+  amenityId String
+  amenity   Amenity  @relation(fields: [amenityId], references: [id], onDelete: Cascade)
+  
+  @@unique([villaId, amenityId])
+  @@index([villaId])
+  @@map("villa_amenities")
+}
+
+model Feature {
+  id          String   @id @default(cuid())
+  name        String   @unique
+  icon        String?
+  description String?
+  createdAt   DateTime @default(now())
+  
+  villas      VillaFeature[]
+  
+  @@map("features")
+}
+
+model VillaFeature {
+  id        String   @id @default(cuid())
+  villaId   String
+  villa     Villa    @relation(fields: [villaId], references: [id], onDelete: Cascade)
+  featureId String
+  feature   Feature  @relation(fields: [featureId], references: [id], onDelete: Cascade)
+  value     String?  // e.g., "500m" for beach distance
+  
+  @@unique([villaId, featureId])
+  @@index([villaId])
+  @@map("villa_features")
+}
+
+model VillaAvailability {
+  id          String   @id @default(cuid())
+  villaId     String
+  villa       Villa    @relation(fields: [villaId], references: [id], onDelete: Cascade)
+  date        DateTime @db.Date
+  isAvailable Boolean  @default(true)
+  price       Decimal? @db.Decimal(10, 2)
+  minStay     Int?
+  note        String?
+  
+  @@unique([villaId, date])
+  @@index([villaId, date])
+  @@map("villa_availability")
+}
+
+model SeasonalPricing {
+  id          String   @id @default(cuid())
+  villaId     String
+  villa       Villa    @relation(fields: [villaId], references: [id], onDelete: Cascade)
+  name        String
+  startDate   DateTime @db.Date
+  endDate     DateTime @db.Date
+  pricePerNight Decimal @db.Decimal(10, 2)
+  minStay     Int?
+  createdAt   DateTime @default(now())
+  
+  @@index([villaId])
+  @@map("seasonal_pricing")
+}
+
+model Reservation {
+  id              String            @id @default(cuid())
+  villaId         String
+  villa           Villa             @relation(fields: [villaId], references: [id])
+  userId          String
+  user            User              @relation(fields: [userId], references: [id])
+  
+  // Dates
+  checkIn         DateTime          @db.Date
+  checkOut        DateTime          @db.Date
+  
+  // Guest details
+  guests          Int
+  adults          Int               @default(2)
+  children        Int               @default(0)
+  infants         Int               @default(0)
+  
+  // Pricing
+  pricePerNight   Decimal           @db.Decimal(10, 2)
+  totalNights     Int
+  subtotal        Decimal           @db.Decimal(10, 2)
+  cleaningFee     Decimal           @default(0) @db.Decimal(10, 2)
+  serviceFee      Decimal           @default(0) @db.Decimal(10, 2)
+  discount        Decimal           @default(0) @db.Decimal(10, 2)
+  totalPrice      Decimal           @db.Decimal(10, 2)
+  
+  // Promo code
+  promoCode       String?
+  promoDiscount   Decimal?          @db.Decimal(10, 2)
+  
+  // Status
+  status          ReservationStatus @default(PENDING)
+  paymentStatus   PaymentStatus     @default(PENDING)
+  
+  // Contact
+  guestName       String
+  guestEmail      String
+  guestPhone      String
+  specialRequests String?           @db.Text
+  
+  // Notes
+  adminNotes      String?           @db.Text
+  
+  // Cancellation
+  cancelledAt     DateTime?
+  cancellationReason String?        @db.Text
+  refundAmount    Decimal?          @db.Decimal(10, 2)
+  
+  createdAt       DateTime          @default(now())
+  updatedAt       DateTime          @updatedAt
+  
+  // Relations
+  payments        Payment[]
+  
+  @@index([villaId])
+  @@index([userId])
+  @@index([status])
+  @@index([checkIn, checkOut])
+  @@map("reservations")
+}
+
+model Payment {
+  id              String        @id @default(cuid())
+  reservationId   String
+  reservation     Reservation   @relation(fields: [reservationId], references: [id])
+  
+  amount          Decimal       @db.Decimal(10, 2)
+  currency        String        @default("EUR")
+  status          PaymentStatus @default(PENDING)
+  
+  // Payment details
+  paymentMethod   String        // stripe, iyzico, bank_transfer
+  paymentProvider String?       // stripe, iyzico
+  transactionId   String?       @unique
+  
+  // Stripe specific
+  stripePaymentIntentId String? @unique
+  stripeChargeId        String?
+  
+  // İyzico specific
+  iyzicoPaymentId       String?
+  iyzicoConversationId  String?
+  
+  // Metadata
+  metadata        Json?
+  errorMessage    String?       @db.Text
+  
+  paidAt          DateTime?
+  refundedAt      DateTime?
+  
+  createdAt       DateTime      @default(now())
+  updatedAt       DateTime      @updatedAt
+  
+  @@index([reservationId])
+  @@index([transactionId])
+  @@map("payments")
+}
+
+model Review {
+  id            String   @id @default(cuid())
+  villaId       String
+  villa         Villa    @relation(fields: [villaId], references: [id], onDelete: Cascade)
+  userId        String
+  user          User     @relation(fields: [userId], references: [id])
+  
+  // Ratings (1-5)
+  overallRating Float
+  cleanlinessRating Float
+  accuracyRating Float
+  locationRating Float
+  valueRating Float
+  communicationRating Float
+  
+  // Review
+  title         String?
+  comment       String   @db.Text
+  
+  // Response
+  response      String?  @db.Text
+  respondedAt   DateTime?
+  
+  // Status
+  isPublished   Boolean  @default(false)
+  isVerified    Boolean  @default(false)
+  
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+  
+  @@index([villaId])
+  @@index([userId])
+  @@map("reviews")
+}
+
+model Favorite {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  villaId   String
+  villa     Villa    @relation(fields: [villaId], references: [id], onDelete: Cascade)
+  createdAt DateTime @default(now())
+  
+  @@unique([userId, villaId])
+  @@index([userId])
+  @@map("favorites")
+}
+
+model PromoCode {
+  id          String   @id @default(cuid())
+  code        String   @unique
+  description String?
+  
+  // Discount
+  discountType String  // percentage, fixed
+  discountValue Decimal @db.Decimal(10, 2)
+  
+  // Conditions
+  minAmount   Decimal? @db.Decimal(10, 2)
+  maxDiscount Decimal? @db.Decimal(10, 2)
+  maxUses     Int?
+  usedCount   Int      @default(0)
+  
+  // Validity
+  startDate   DateTime
+  endDate     DateTime
+  isActive    Boolean  @default(true)
+  
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  
+  @@index([code])
+  @@map("promo_codes")
+}
+
+model ContactMessage {
+  id        String   @id @default(cuid())
+  name      String
+  email     String
+  phone     String?
+  subject   String?
+  message   String   @db.Text
+  isRead    Boolean  @default(false)
+  repliedAt DateTime?
+  createdAt DateTime @default(now())
+  
+  @@index([isRead])
+  @@map("contact_messages")
+}
+
+model Setting {
+  id        String   @id @default(cuid())
+  key       String   @unique
+  value     String   @db.Text
+  type      String   @default("string") // string, number, boolean, json
+  group     String?  // general, payment, email, etc.
+  updatedAt DateTime @updatedAt
+  
+  @@map("settings")
+}
+
