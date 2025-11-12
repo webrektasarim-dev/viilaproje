@@ -6,9 +6,8 @@ services:
     region: frankfurt
     plan: free
     branch: main
-    rootDir: backend
-    buildCommand: npm install && npx prisma generate && npm run build
-    startCommand: npm run start:prod
+    buildCommand: cd backend && npm install && npx prisma generate && npm run build
+    startCommand: cd backend && npm run start:prod
     healthCheckPath: /api/v1/health
     envVars:
       - key: NODE_ENV
