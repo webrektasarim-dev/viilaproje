@@ -28,7 +28,7 @@ export class UploadService {
     });
   }
 
-  async uploadImage(file: Express.Multer.File, folder: string = 'villas'): Promise<string> {
+  async uploadImage(file: any, folder: string = 'villas'): Promise<string> {
     const filename = `${uuidv4()}-${Date.now()}.jpg`;
     const filepath = path.join(this.uploadDir, folder, filename);
 
@@ -45,7 +45,7 @@ export class UploadService {
     return `/uploads/${folder}/${filename}`;
   }
 
-  async uploadMultipleImages(files: Express.Multer.File[], folder: string = 'villas'): Promise<string[]> {
+  async uploadMultipleImages(files: any[], folder: string = 'villas'): Promise<string[]> {
     const uploadPromises = files.map((file) => this.uploadImage(file, folder));
     return Promise.all(uploadPromises);
   }

@@ -26,7 +26,7 @@ export class UploadController {
   @ApiOperation({ summary: 'Tek görsel yükle (Sadece admin)' })
   @ApiConsumes('multipart/form-data')
   @UseInterceptors(FileInterceptor('file'))
-  async uploadImage(@UploadedFile() file: Express.Multer.File) {
+  async uploadImage(@UploadedFile() file: any) {
     if (!file) {
       throw new BadRequestException('Dosya yüklenemedi');
     }
@@ -40,7 +40,7 @@ export class UploadController {
   @ApiOperation({ summary: 'Çoklu görsel yükle (Sadece admin)' })
   @ApiConsumes('multipart/form-data')
   @UseInterceptors(FilesInterceptor('files', 10))
-  async uploadImages(@UploadedFiles() files: Express.Multer.File[]) {
+  async uploadImages(@UploadedFiles() files: any[]) {
     if (!files || files.length === 0) {
       throw new BadRequestException('Dosyalar yüklenemedi');
     }
