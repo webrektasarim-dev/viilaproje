@@ -1,0 +1,5 @@
+# Backend URL buraya yazılacak
+# Render'dan kopyalanacak
+
+BACKEND_URL=
+

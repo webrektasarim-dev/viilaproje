@@ -1,0 +1,23 @@
+# Deployment Environment Variables
+# Kullanıcı Neon URL'ini buraya yapıştıracak
+
+DATABASE_URL=NEON_URL_BURAYA_GELECEK
+
+# Diğer değişkenler hazır
+NODE_ENV=production
+PORT=3000
+JWT_SECRET=VillaProje2024SuperSecretProductionKey!
+JWT_REFRESH_SECRET=VillaProje2024RefreshSecretProductionKey!
+JWT_EXPIRES_IN=15m
+JWT_REFRESH_EXPIRES_IN=7d
+CORS_ORIGIN=*
+STRIPE_SECRET_KEY=sk_test_placeholder
+STRIPE_WEBHOOK_SECRET=whsec_placeholder
+STRIPE_PUBLIC_KEY=pk_test_placeholder
+AWS_ACCESS_KEY_ID=temp
+AWS_SECRET_ACCESS_KEY=temp
+AWS_S3_BUCKET=villaproje
+AWS_REGION=eu-central-1
+MAX_FILE_SIZE=10485760
+UPLOAD_DESTINATION=./uploads
+
